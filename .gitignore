@@ -17,3 +17,7 @@ cabal.sandbox.config
 *.eventlog
 .stack-work/
 cabal.project.local
+config.py*
+runpattern
+cycle.wav
+
