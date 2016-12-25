@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import tweepy, time, sys
-import sys
 import os
 from subprocess import Popen, PIPE, STDOUT
 import config # includes the below keys + secrets for twitter
@@ -22,6 +21,7 @@ class TidalbotListener(tweepy.StreamListener):
         print(status.text)
         matcher = re.compile(r'@tidalbot\s*')
         code = matcher.sub('', status.text)
+        code = code.decode('unicode_escape').encode('ascii', 'ignore')
         print("code: " + code)
         p = Popen(['./runpattern'], stdout=PIPE, stdin=PIPE, stderr=STDOUT)
         tidalout = p.communicate(input=code)[0]
