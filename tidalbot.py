@@ -38,7 +38,7 @@ class TidalbotListener(tweepy.StreamListener):
             clypurl = r.json()['Url']
             pprint(r.json())
             print(clypurl)
-            m = "@%s Listen: %s" % (status.user.screen_name, clypurl)
+            m = ".@%s Listen: %s" % (status.user.screen_name, clypurl)
             api.update_status(m, in_reply_to_status_id = status.id)
         else:
             m = "@%s Sorry there's something wrong with that pattern" % (status.user.screen_name)

@@ -8,7 +8,7 @@ import System.Cmd
 data Response = OK {parsed :: ParamPattern}
               | Error {errorMessage :: String}
 
-seconds = 10
+seconds = 20
 
 main = do code <- getContents
           r <- runTidal code
