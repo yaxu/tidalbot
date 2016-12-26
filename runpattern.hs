@@ -4,6 +4,16 @@ import System.Exit
 -- import System.Environment (getArgs)
 import Control.Concurrent
 import System.Cmd
+import Text.HTML.TagSoup.Entity (lookupEntity)
+
+unescapeEntities :: String -> String
+unescapeEntities [] = []
+unescapeEntities ('&':xs) = 
+  let (b, a) = break (== ';') xs in
+  case (lookupEntity b, a) of
+    (Just c, ';':as) ->  c  ++ unescapeEntities as    
+    _                -> '&' : unescapeEntities xs
+unescapeEntities (x:xs) = x : unescapeEntities xs
 
 data Response = OK {parsed :: ParamPattern}
               | Error {errorMessage :: String}
@@ -11,15 +21,15 @@ data Response = OK {parsed :: ParamPattern}
 seconds = 20
 
 main = do code <- getContents
-          r <- runTidal code
+          r <- runTidal $ unescapeEntities code
           respond r
    where respond (OK p) = do d <- dirtStream
                              system $ "ecasound -t:" ++ show (seconds+2) ++ " -i jack,dirt -o cycle.wav &"
                              d p
                              threadDelay (seconds * 1000000)
                              exitSuccess
-         response (Error s) = do putStrLn ("error: " ++ s)
-                                 exitFailure
+         respond (Error s) = do putStrLn ("error: " ++ s)
+                                exitFailure
                    
 libs = ["Prelude","Sound.Tidal.Context","Sound.OSC.Type","Sound.OSC.Datum"]
 
