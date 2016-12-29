@@ -5,6 +5,7 @@ import System.Exit
 import Control.Concurrent
 import System.Cmd
 import Text.HTML.TagSoup.Entity (lookupEntity)
+import System.Posix.Resource
 
 unescapeEntities :: String -> String
 unescapeEntities [] = []
@@ -20,7 +21,8 @@ data Response = OK {parsed :: ParamPattern}
 
 seconds = 20
 
-main = do code <- getContents
+main = do setResourceLimit ResourceCPUTime (ResourceLimits (ResourceLimit 2) (ResourceLimit 4))
+          code <- getContents
           r <- runTidal $ unescapeEntities code
           respond r
    where respond (OK p) = do d <- dirtStream
