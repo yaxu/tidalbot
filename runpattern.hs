@@ -1,7 +1,7 @@
 import Sound.Tidal.Context
 import Language.Haskell.Interpreter as Hint
 import System.Exit
--- import System.Environment (getArgs)
+import System.Environment (getArgs)
 import Control.Concurrent
 import System.Cmd
 import Text.HTML.TagSoup.Entity (lookupEntity)
@@ -21,17 +21,20 @@ data Response = OK {parsed :: ParamPattern}
 
 seconds = 20
 
-main = do setResourceLimit ResourceCPUTime (ResourceLimits (ResourceLimit 2) (ResourceLimit 4))
+main = do a <- getArgs
+          let fn = head a
+          setResourceLimit ResourceCPUTime (ResourceLimits (ResourceLimit 4) (ResourceLimit 8))
           code <- getContents
           r <- runTidal $ unescapeEntities code
-          respond r
-   where respond (OK p) = do d <- dirtStream
-                             system $ "ecasound -t:" ++ show (seconds+2) ++ " -i jack,dirt -o cycle.wav &"
-                             d p
-                             threadDelay (seconds * 1000000)
-                             exitSuccess
-         respond (Error s) = do putStrLn ("error: " ++ s)
-                                exitFailure
+          respond fn r
+   where respond fn (OK p)
+           = do d <- dirtStream
+                system $ "ecasound -t:" ++ show (seconds+2) ++ " -i jack,dirt -o " ++ fn ++ " &"
+                d p
+                threadDelay (seconds * 1000000)
+                exitSuccess
+         respond _ (Error s) = do putStrLn ("error: " ++ s)
+                                  exitFailure
                    
 libs = ["Prelude","Sound.Tidal.Context","Sound.OSC.Type","Sound.OSC.Datum"]
 
