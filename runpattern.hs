@@ -28,8 +28,11 @@ main = do a <- getArgs
           r <- runTidal $ unescapeEntities code
           respond fn r
    where respond fn (OK p)
-           = do d <- dirtStream
+           = do (cps, nudger, getNow) <- cpsUtils'
+                -- (d,_) <- superDirtSetters getNow
+                d <- dirtStream
                 system $ "ecasound -t:" ++ show (seconds+2) ++ " -i jack,dirt -o " ++ fn ++ " &"
+                -- system $ "ecasound -t:" ++ show (seconds+2) ++ " -i jack,SuperCollider -o " ++ fn ++ " &"
                 d p
                 threadDelay (seconds * 1000000)
                 exitSuccess
