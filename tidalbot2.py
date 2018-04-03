@@ -11,6 +11,7 @@ import time
 from websocket import create_connection
 from pprint import pprint
 import string, math, random
+import html
 
 target = liblo.Address(9162)
 
@@ -25,13 +26,20 @@ def uniqid():
     return uniqid
 
 def process_status(status):
-    print(status.text)
+    try:
+        text = status.extended_tweet["full_text"]
+    except AttributeError:
+        text = status.text
+
+    print(text)
+
     #call(["killall", "jackd"])
     #time.sleep(2)
     matcher = re.compile(r'@tidalbot\s*')
-    code = matcher.sub('', status.text)
+    code = matcher.sub('', text)
     #code = code.decode('unicode_escape').encode('ascii', 'ignore')
-
+    code = html.unescape(code)
+    code = code.translate(str.maketrans('“”','""'))
     ws = create_connection("ws://localhost:9162/")
     msg = ws.recv()
     print(msg)
@@ -39,16 +47,25 @@ def process_status(status):
     print("code: " + code)
     msg = ws.recv();
     print("got: " + msg)
-    match = re.search(r'^/record\s+(ok|nok)\s+(.*)$', msg)
+    match = re.search(r'^/record\s+(ok|nok)\s+((?:.|\n)*)', msg)
     if (match):
         (ok, path) = match.groups()
         print("got status: " + ok + " path " + path)
         if ok == "ok":
+            print("ok!")
             url = "http://douglas.lurk.org/" + path
             m = ".@%s Listen: %s" % (status.user.screen_name, url)
-            api.update_status(m, in_reply_to_status_id = status.id)
+            matcher = re.compile(r'mp3$')
+            imagepath = "../tidal-websocket/" + matcher.sub('png', path)
+            #api.update_status(m, in_reply_to_status_id = status.id)
+            api.update_with_media(imagepath, status=m, in_reply_to_status_id = status.id)
+            pdfpath = "../tidal-websocket/" + matcher.sub('pdf', path)
+            call(["scp", "-P", "2222", pdfpath, "pi@localhost:pattern/display.pdf"])
+            call(["scp", "-P", "2223", pdfpath, "pi@localhost:pattern/display.pdf"])
         else:
-            m = "@%s Sorry there's something wrong with that pattern" % (status.user.screen_name)
+            m = "@%s Oh dear. %s" % (status.user.screen_name, path)
+            print("sending: " + m)
+            m  = (m[:275] + '..') if len(m) > 273 else m
             api.update_status(m, in_reply_to_status_id = status.id)
 
 class TidalbotListener(tweepy.StreamListener):
@@ -58,10 +75,10 @@ class TidalbotListener(tweepy.StreamListener):
 
 if len(sys.argv) > 1:
     for id in sys.argv[1:]:
-      status = api.get_status(id)
+      status = api.get_status(id, tweet_mode='extended')
       process_status(status)
 else:
     tidalbotListener = TidalbotListener()
     stream = tweepy.Stream(auth = api.auth, listener=tidalbotListener)
-
+    print(stream)
     stream.filter(track=['@tidalbot'])
